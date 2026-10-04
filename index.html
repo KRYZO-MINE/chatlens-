@@ -647,9 +647,9 @@
       </div>
     </header>
 
-    <main class="flex-1 min-h-0 grid lg:grid-cols-[360px_1fr]">
+    <main class="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[360px_1fr] overflow-y-auto lg:overflow-hidden">
       <aside
-        class="border-r border-slate-200 bg-slate-50/50 flex flex-col min-h-0 shadow-[1px_0_10px_rgba(0,0,0,0.02)] z-0">
+        class="border-b lg:border-r border-slate-200 bg-slate-50/50 flex flex-col shrink-0 lg:min-h-0 shadow-[1px_0_10px_rgba(0,0,0,0.02)] z-0">
         <div class="p-4 border-b border-slate-200 flex-1 flex flex-col min-h-0">
           <div class="flex items-center justify-between mb-2 shrink-0">
             <label class="text-sm font-semibold text-slate-700">Raw Ollama transcript</label>
@@ -659,9 +659,9 @@
             placeholder="Paste your Ollama terminal output here..."></textarea>
         </div>
 
-        <div class="p-4 border-b border-slate-200 flex gap-4 shrink-0 h-20 items-stretch">
-          <button id="formatBtn" class="flex-1 uiverse-blue-btn">Format Chat</button>
-          <div class="uiverse-btn-wrap w-28">
+        <div class="p-4 border-b border-slate-200 flex flex-col sm:flex-row gap-4 shrink-0 sm:h-20 items-stretch">
+          <button id="formatBtn" class="flex-1 uiverse-blue-btn h-12 sm:h-auto">Format Chat</button>
+          <div class="uiverse-btn-wrap w-full sm:w-28 h-12 sm:h-auto">
             <button id="clearBtn" class="uiverse-btn"><span>Clear</span></button>
             <div class="uiverse-btn-shadow"></div>
           </div>
@@ -691,12 +691,12 @@
         </div>
       </aside>
 
-      <section class="min-w-0 min-h-0 flex flex-col bg-[#f8fafc]">
+      <section class="min-w-0 min-h-[500px] lg:min-h-0 flex-1 flex flex-col bg-[#f8fafc]">
         <div
-          class="h-16 shrink-0 border-b border-slate-200 bg-white flex items-center gap-4 px-4 md:px-6 z-10 shadow-sm">
-          <div class="uiverse-search-wrap">
+          class="min-h-[4rem] py-3 shrink-0 border-b border-slate-200 bg-white flex flex-wrap items-center gap-3 sm:gap-4 px-4 md:px-6 z-10 shadow-sm">
+          <div class="uiverse-search-wrap w-full sm:max-w-[250px] !max-w-full sm:!max-w-[250px]">
             <div class="uiverse-search-container">
-              <input id="search" class="uiverse-search-input" type="text" placeholder="Search conversation...">
+              <input id="search" class="uiverse-search-input" type="text" placeholder="Search...">
               <svg viewBox="0 0 24 24" class="uiverse-search-icon">
                 <g>
                   <path
@@ -707,14 +707,14 @@
             </div>
           </div>
           <button id="collapseBtn"
-            class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.97]">Collapse
+            class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.97] whitespace-nowrap">Collapse
             thinking</button>
           <button id="copyAllBtn"
-            class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.97]">Copy
+            class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.97] whitespace-nowrap">Copy
             chat</button>
         </div>
 
-        <div id="chat" class="flex-1 overflow-y-auto px-4 md:px-10 py-7">
+        <div id="chat" class="flex-1 overflow-y-visible lg:overflow-y-auto px-4 md:px-10 py-7">
           <div id="empty" class="h-full grid place-items-center">
             <div class="text-center max-w-md">
               <div
