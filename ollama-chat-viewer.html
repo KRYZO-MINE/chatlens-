@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatLens - AI Chat & Ollama Transcript Viewer</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="ChatLens is a beautifully designed, local AI chat transcript viewer. Parse and format raw Ollama terminal logs into a clean, modern conversation UI.">
+  <meta name="keywords" content="ChatLens, AI chat viewer, Ollama chat viewer, Ollama transcript viewer, AI transcript parser, AI chat transcript, local AI chat viewer, terminal chat viewer, Ollama logs, AI conversation viewer">
+  <meta name="author" content="ChatLens">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="canonical" href="https://chatlens.kryzo.space/">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="ChatLens - AI Chat & Ollama Transcript Viewer">
+  <meta property="og:description" content="Parse and format raw Ollama terminal logs into a clean, modern chat interface.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://chatlens.kryzo.space/">
+  <meta property="og:site_name" content="ChatLens">
+  <meta property="og:image" content="https://chatlens.kryzo.space/logo.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ChatLens - AI Chat & Ollama Transcript Viewer">
+  <meta name="twitter:description" content="Parse and format raw Ollama terminal logs into a clean, modern chat interface.">
+  <meta name="twitter:image" content="https://chatlens.kryzo.space/logo.svg">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <link rel="apple-touch-icon" href="logo.svg">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --anim-duration: 0.4s;
+      --anim-easing: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html,
+    body {
+      height: 100%;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* Elegant Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 999px;
+      transition: background 0.2s ease;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    /* Animations */
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes pulseSoft {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    .msg-enter {
+      animation: slideInUp var(--anim-duration) var(--anim-easing) both;
+    }
+
+    /* Staggered animation for initial load */
+    article:nth-child(1) {
+      animation-delay: 0.05s;
+    }
+
+    article:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+
+    article:nth-child(3) {
+      animation-delay: 0.15s;
+    }
+
+    article:nth-child(4) {
+      animation-delay: 0.2s;
+    }
+
+    article:nth-child(5) {
+      animation-delay: 0.25s;
+    }
+
+    article:nth-child(n+6) {
+      animation-delay: 0.3s;
+    }
+
+    /* Component styles & hover effects */
+    button,
+    label,
+    input,
+    textarea {
+      transition: all 0.2s var(--anim-easing);
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .thinking {
+      border-left: 2px solid #e2e8f0;
+      transition: all 0.3s var(--anim-easing);
+    }
+
+    details[data-thinking] summary {
+      transition: background-color 0.2s ease, color 0.2s ease;
+      border-radius: 0.375rem;
+    }
+
+    details[data-thinking] summary:hover {
+      background-color: rgba(0, 0, 0, 0.03);
+    }
+
+    details[data-thinking][open] summary {
+      color: #2563eb;
+    }
+
+    details[data-thinking]>div {
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Markdown Styling */
+    .markdown pre {
+      overflow: auto;
+      border-radius: 0.75rem;
+      background: #f8fafc;
+      padding: 1rem;
+      margin: 0.75rem 0;
+      box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.02);
+      border: 1px solid #e2e8f0;
+    }
+
+    .markdown code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .markdown :not(pre)>code {
+      background: #f1f5f9;
+      padding: 0.15rem 0.35rem;
+      border-radius: 0.3rem;
+      color: #0284c7;
+      font-weight: 500;
+    }
+
+    .markdown p {
+      margin: 0.75rem 0;
+      line-height: 1.6;
+    }
+
+    .markdown ul {
+      list-style: disc;
+      padding-left: 1.5rem;
+      margin: 0.75rem 0;
+    }
+
+    .markdown ol {
+      list-style: decimal;
+      padding-left: 1.5rem;
+      margin: 0.75rem 0;
+    }
+
+    .markdown li {
+      margin-bottom: 0.25rem;
+    }
+
+    .markdown h1,
+    .markdown h2,
+    .markdown h3 {
+      font-weight: 600;
+      margin: 1.5rem 0 0.75rem;
+      color: #0f172a;
+      tracking: tight;
+    }
+
+    .markdown h1 {
+      font-size: 1.75rem;
+    }
+
+    .markdown h2 {
+      font-size: 1.4rem;
+    }
+
+    .markdown h3 {
+      font-size: 1.15rem;
+    }
+
+    .markdown blockquote {
+      border-left: 3px solid #3b82f6;
+      padding-left: 1rem;
+      color: #475569;
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, transparent 100%);
+      padding-block: 0.25rem;
+    }
+
+    .markdown a {
+      color: #2563eb;
+      text-decoration: underline;
+      text-decoration-color: rgba(37, 99, 235, 0.4);
+      text-underline-offset: 4px;
+      transition: all 0.2s;
+    }
+
+    .markdown a:hover {
+      color: #1d4ed8;
+      text-decoration-color: #1d4ed8;
+    }
+
+    .msg-highlight {
+      outline: 2px solid #3b82f6;
+      outline-offset: 4px;
+      border-radius: 0.5rem;
+      animation: pulseSoft 2s infinite;
+    }
+
+    /* Uiverse Button Styles */
+    @property --angle-1 {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: -75deg;
+    }
+
+    @property --angle-2 {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: -45deg;
+    }
+
+    .uiverse-btn-wrap {
+      --anim--hover-time: 400ms;
+      --anim--hover-ease: cubic-bezier(0.25, 1, 0.5, 1);
+      position: relative;
+      z-index: 2;
+      border-radius: 999vw;
+      background: transparent;
+      pointer-events: none;
+      transition: all var(--anim--hover-time) var(--anim--hover-ease);
+      width: 100%;
+      height: 100%;
+    }
+
+    .uiverse-btn-shadow {
+      --shadow-cuttoff-fix: 2em;
+      position: absolute;
+      width: calc(100% + var(--shadow-cuttoff-fix));
+      height: calc(100% + var(--shadow-cuttoff-fix));
+      top: calc(0% - var(--shadow-cuttoff-fix) / 2);
+      left: calc(0% - var(--shadow-cuttoff-fix) / 2);
+      filter: blur(clamp(2px, 0.125em, 12px));
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .uiverse-btn-shadow::after {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      inset: 0;
+      border-radius: 999vw;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
+      width: calc(100% - var(--shadow-cuttoff-fix) - 0.25em);
+      height: calc(100% - var(--shadow-cuttoff-fix) - 0.25em);
+      top: calc(var(--shadow-cuttoff-fix) - 0.5em);
+      left: calc(var(--shadow-cuttoff-fix) - 0.875em);
+      padding: 0.125em;
+      box-sizing: border-box;
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask-composite: exclude;
+      transition: all var(--anim--hover-time) var(--anim--hover-ease);
+      overflow: visible;
+      opacity: 1;
+    }
+
+    .uiverse-btn {
+      --border-width: clamp(1px, 0.0625em, 4px);
+      all: unset;
+      cursor: pointer;
+      position: relative;
+      pointer-events: auto;
+      z-index: 3;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      display: block;
+      background: linear-gradient(-75deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+      border-radius: 999vw;
+      box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5), 0 0.25em 0.125em -0.125em rgba(0, 0, 0, 0.2), 0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.2), 0 0 0 0 rgba(255, 255, 255, 1);
+      backdrop-filter: blur(clamp(1px, 0.125em, 4px));
+      transition: all var(--anim--hover-time) var(--anim--hover-ease);
+      text-align: center;
+    }
+
+    .uiverse-btn:hover {
+      transform: scale(0.975);
+      backdrop-filter: blur(0.01em);
+      box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5), 0 0.15em 0.05em -0.1em rgba(0, 0, 0, 0.25), 0 0 0.05em 0.1em inset rgba(255, 255, 255, 0.5), 0 0 0 0 rgba(255, 255, 255, 1);
+    }
+
+    .uiverse-btn span {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      user-select: none;
+      font-family: "Inter", sans-serif;
+      letter-spacing: -0.02em;
+      font-weight: 500;
+      font-size: 0.875rem;
+      color: rgba(50, 50, 50, 1);
+      text-shadow: 0em 0.25em 0.05em rgba(0, 0, 0, 0.1);
+      transition: all var(--anim--hover-time) var(--anim--hover-ease);
+      padding-inline: 1em;
+      padding-block: 0.5em;
+    }
+
+    .uiverse-btn:hover span {
+      text-shadow: 0.025em 0.025em 0.025em rgba(0, 0, 0, 0.12);
+    }
+
+    .uiverse-btn span::after {
+      content: "";
+      display: block;
+      position: absolute;
+      z-index: 1;
+      width: calc(100% - var(--border-width));
+      height: calc(100% - var(--border-width));
+      top: calc(0% + var(--border-width) / 2);
+      left: calc(0% + var(--border-width) / 2);
+      box-sizing: border-box;
+      border-radius: 999vw;
+      overflow: clip;
+      background: linear-gradient(var(--angle-2), rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 40% 50%, rgba(255, 255, 255, 0) 55%);
+      mix-blend-mode: screen;
+      pointer-events: none;
+      background-size: 200% 200%;
+      background-position: 0% 50%;
+      transition: background-position calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease), --angle-2 calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease);
+    }
+
+    .uiverse-btn:hover span::after {
+      background-position: 25% 50%;
+    }
+
+    .uiverse-btn:active span::after {
+      background-position: 50% 15%;
+      --angle-2: -15deg;
+    }
+
+    .uiverse-btn::after {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      border-radius: 999vw;
+      width: calc(100% + var(--border-width));
+      height: calc(100% + var(--border-width));
+      top: calc(0% - var(--border-width) / 2);
+      left: calc(0% - var(--border-width) / 2);
+      padding: var(--border-width);
+      box-sizing: border-box;
+      background: conic-gradient(from var(--angle-1) at 50% 50%, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0) 5% 40%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 60% 95%, rgba(0, 0, 0, 0.2)), linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5));
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask-composite: exclude;
+      transition: all var(--anim--hover-time) var(--anim--hover-ease), --angle-1 500ms ease;
+      box-shadow: inset 0 0 0 calc(var(--border-width) / 2) rgba(255, 255, 255, 0.5);
+    }
+
+    .uiverse-btn:hover::after {
+      --angle-1: -125deg;
+    }
+
+    .uiverse-btn:active::after {
+      --angle-1: -75deg;
+    }
+
+    .uiverse-btn-wrap:has(.uiverse-btn:hover) .uiverse-btn-shadow {
+      filter: blur(clamp(2px, 0.0625em, 6px));
+      transition: filter var(--anim--hover-time) var(--anim--hover-ease);
+    }
+
+    .uiverse-btn-wrap:has(.uiverse-btn:hover) .uiverse-btn-shadow::after {
+      top: calc(var(--shadow-cuttoff-fix) - 0.875em);
+      opacity: 1;
+    }
+
+    .uiverse-btn-wrap:has(.uiverse-btn:active) {
+      transform: rotate3d(1, 0, 0, 25deg);
+    }
+
+    .uiverse-btn-wrap:has(.uiverse-btn:active) .uiverse-btn {
+      box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5), 0 0.125em 0.125em -0.125em rgba(0, 0, 0, 0.2), 0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.2), 0 0.225em 0.05em 0 rgba(0, 0, 0, 0.05), 0 0.25em 0 0 rgba(255, 255, 255, 0.75), inset 0 0.25em 0.05em 0 rgba(0, 0, 0, 0.15);
+    }
+
+    .uiverse-btn-wrap:has(.uiverse-btn:active) .uiverse-btn-shadow {
+      filter: blur(clamp(2px, 0.125em, 12px));
+    }
+
+    .uiverse-btn-wrap:has(.uiverse-btn:active) .uiverse-btn-shadow::after {
+      top: calc(var(--shadow-cuttoff-fix) - 0.5em);
+      opacity: 0.75;
+    }
+
+    .uiverse-btn-wrap:has(.uiverse-btn:active) span {
+      text-shadow: 0.025em 0.25em 0.05em rgba(0, 0, 0, 0.12);
+    }
+
+    /* Uiverse Blue Button Styles */
+    .uiverse-blue-btn {
+      align-items: center;
+      appearance: none;
+      background-color: #EEF2FF;
+      border-radius: 8px;
+      border-width: 2px;
+      border-color: #536DFE;
+      box-shadow: rgba(83, 109, 254, 0.2) 0 2px 4px, rgba(83, 109, 254, 0.15) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+      box-sizing: border-box;
+      color: #536DFE;
+      cursor: pointer;
+      display: inline-flex;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-weight: 700;
+      font-size: 14px;
+      height: 100%;
+      min-height: 44px;
+      justify-content: center;
+      line-height: 1;
+      list-style: none;
+      overflow: hidden;
+      padding-left: 24px;
+      padding-right: 24px;
+      position: relative;
+      text-align: center;
+      text-decoration: none;
+      transition: box-shadow 0.15s, transform 0.15s;
+      user-select: none;
+      touch-action: manipulation;
+      white-space: nowrap;
+      will-change: box-shadow, transform;
+    }
+
+    .uiverse-blue-btn:focus {
+      outline: none;
+      box-shadow: #D6D6E7 0 0 0 1.5px inset, rgba(83, 109, 254, 0.4) 0 2px 4px, rgba(83, 109, 254, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+    }
+
+    .uiverse-blue-btn:hover {
+      box-shadow: rgba(83, 109, 254, 0.3) 0 4px 8px, rgba(83, 109, 254, 0.2) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+      transform: translateY(-2px);
+    }
+
+    .uiverse-blue-btn:active {
+      box-shadow: #D6D6E7 0 3px 7px inset;
+      transform: translateY(2px);
+    }
+
+    /* Uiverse Search Input */
+    .uiverse-search-wrap {
+      position: relative;
+      background: linear-gradient(135deg, rgb(179, 208, 253) 0%, rgb(164, 202, 248) 100%);
+      border-radius: 1000px;
+      padding: 6px;
+      display: grid;
+      place-content: center;
+      z-index: 0;
+      flex: 1;
+      max-width: 250px;
+    }
+
+    .uiverse-search-container {
+      position: relative;
+      width: 100%;
+      border-radius: 50px;
+      background: linear-gradient(135deg, rgb(218, 232, 247) 0%, rgb(214, 229, 247) 100%);
+      padding: 4px;
+      display: flex;
+      align-items: center;
+    }
+
+    .uiverse-search-container::after,
+    .uiverse-search-container::before {
+      content: "";
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      position: absolute;
+    }
+
+    .uiverse-search-container::before {
+      top: -1px;
+      left: -1px;
+      background: linear-gradient(0deg, rgb(218, 232, 247) 0%, rgb(255, 255, 255) 100%);
+      z-index: -1;
+    }
+
+    .uiverse-search-container::after {
+      bottom: -1px;
+      right: -1px;
+      background: linear-gradient(0deg, rgb(163, 206, 255) 0%, rgb(211, 232, 255) 100%);
+      box-shadow: rgba(79, 156, 232, 0.7019607843) 3px 3px 5px 0px, rgba(79, 156, 232, 0.7019607843) 5px 5px 20px 0px;
+      z-index: -2;
+    }
+
+    .uiverse-search-input {
+      padding: 6px 12px;
+      width: 100%;
+      background: linear-gradient(135deg, rgb(218, 232, 247) 0%, rgb(214, 229, 247) 100%);
+      border: none;
+      color: #5a7590;
+      font-size: 14px;
+      border-radius: 50px;
+    }
+
+    .uiverse-search-input::placeholder {
+      color: #9EBCD9;
+    }
+
+    .uiverse-search-input:focus {
+      outline: none;
+      background: linear-gradient(135deg, rgb(239, 247, 255) 0%, rgb(214, 229, 247) 100%);
+    }
+
+    .uiverse-search-icon {
+      width: 28px;
+      aspect-ratio: 1;
+      border-left: 2px solid white;
+      border-top: 3px solid transparent;
+      border-bottom: 3px solid transparent;
+      border-radius: 50%;
+      padding-left: 6px;
+      margin-right: 8px;
+      transition: all 0.2s;
+    }
+
+    .uiverse-search-icon:hover {
+      border-left: 3px solid white;
+    }
+
+    .uiverse-search-icon path {
+      fill: white;
+    }
+
+    /* Uiverse Textarea */
+    .uiverse-textarea {
+      width: 100%;
+      flex: 1;
+      background-color: #fff;
+      color: #242424;
+      padding: 1rem;
+      min-height: 200px;
+      border-radius: 4px;
+      outline: none;
+      border: none;
+      box-shadow: 0px 10px 20px -18px blue;
+      border-bottom: 3px solid #0d14e9;
+      transition: .15s ease;
+      resize: none;
+      font-family: monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .uiverse-textarea:hover {
+      outline: 2px solid #0d14e9;
+    }
+
+    .uiverse-textarea:focus {
+      border-bottom: 3px solid #0d14e9;
+      border-radius: 5px 5px 2px 2px;
+      transform: scale(1.02);
+      z-index: 10;
+      position: relative;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 overflow-hidden selection:bg-blue-100 selection:text-blue-900">
+  <div class="h-full flex flex-col">
+    <header
+      class="h-16 shrink-0 border-b border-slate-200 bg-white/90 backdrop-blur flex items-center justify-between px-4 md:px-6 shadow-sm z-10 relative">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 grid place-items-center text-blue-600 shadow-sm">
+          <img src="logo.svg" class="w-5 h-5" alt="ChatLens">
+        </div>
+        <div>
+          <h1 class="font-semibold text-slate-900 tracking-tight">ChatLens</h1>
+          <p class="text-[11px] text-slate-500 font-medium">AI transcript parser & chat viewer</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span id="modelBadge"
+          class="hidden md:inline-flex px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-medium">No
+          model</span>
+        <span id="turnBadge"
+          class="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-medium">0
+          turns</span>
+      </div>
+    </header>
+
+    <main class="flex-1 min-h-0 grid lg:grid-cols-[360px_1fr]">
+      <aside
+        class="border-r border-slate-200 bg-slate-50/50 flex flex-col min-h-0 shadow-[1px_0_10px_rgba(0,0,0,0.02)] z-0">
+        <div class="p-4 border-b border-slate-200 flex-1 flex flex-col min-h-0">
+          <div class="flex items-center justify-between mb-2 shrink-0">
+            <label class="text-sm font-semibold text-slate-700">Raw Ollama transcript</label>
+            <span id="charCount" class="text-[11px] text-slate-500 font-medium">0 chars</span>
+          </div>
+          <textarea id="input" spellcheck="false" class="uiverse-textarea"
+            placeholder="Paste your Ollama terminal output here..."></textarea>
+        </div>
+
+        <div class="p-4 border-b border-slate-200 flex gap-4 shrink-0 h-20 items-stretch">
+          <button id="formatBtn" class="flex-1 uiverse-blue-btn">Format Chat</button>
+          <div class="uiverse-btn-wrap w-28">
+            <button id="clearBtn" class="uiverse-btn"><span>Clear</span></button>
+            <div class="uiverse-btn-shadow"></div>
+          </div>
+        </div>
+
+        <div class="p-4 grid grid-cols-2 gap-4 text-xs shrink-0 px-6 pb-6">
+          <div class="uiverse-btn-wrap">
+            <label class="uiverse-btn cursor-pointer">
+              <span>Import TXT</span>
+              <input id="fileInput" type="file" accept=".txt,text/plain" class="hidden">
+            </label>
+            <div class="uiverse-btn-shadow"></div>
+          </div>
+          <div class="uiverse-btn-wrap">
+            <button id="sampleBtn" class="uiverse-btn"><span>Load sample</span></button>
+            <div class="uiverse-btn-shadow"></div>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-200 text-[11px] text-slate-500 bg-white/50 font-medium shrink-0">
+          <div class="flex justify-between"><span>Messages</span><span id="statMessages" class="text-slate-700">0</span>
+          </div>
+          <div class="flex justify-between mt-1.5"><span>Thinking blocks</span><span id="statThinking"
+              class="text-slate-700">0</span></div>
+          <div class="flex justify-between mt-1.5"><span>Characters</span><span id="statChars"
+              class="text-slate-700">0</span></div>
+        </div>
+      </aside>
+
+      <section class="min-w-0 min-h-0 flex flex-col bg-[#f8fafc]">
+        <div
+          class="h-16 shrink-0 border-b border-slate-200 bg-white flex items-center gap-4 px-4 md:px-6 z-10 shadow-sm">
+          <div class="uiverse-search-wrap">
+            <div class="uiverse-search-container">
+              <input id="search" class="uiverse-search-input" type="text" placeholder="Search conversation...">
+              <svg viewBox="0 0 24 24" class="uiverse-search-icon">
+                <g>
+                  <path
+                    d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z">
+                  </path>
+                </g>
+              </svg>
+            </div>
+          </div>
+          <button id="collapseBtn"
+            class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.97]">Collapse
+            thinking</button>
+          <button id="copyAllBtn"
+            class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.97]">Copy
+            chat</button>
+        </div>
+
+        <div id="chat" class="flex-1 overflow-y-auto px-4 md:px-10 py-7">
+          <div id="empty" class="h-full grid place-items-center">
+            <div class="text-center max-w-md">
+              <div
+                class="mx-auto mb-4 w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 shadow-sm grid place-items-center text-3xl text-blue-500">
+                ⌘</div>
+              <h2 class="text-xl font-semibold text-slate-800">Paste a terminal chat</h2>
+              <p class="text-sm text-slate-500 mt-3 leading-relaxed">Your <code
+                  class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono border border-slate-200">>>> user message</code>,
+                thinking sections and final responses will be converted into a beautiful chat interface.</p>
+            </div>
+          </div>
+          <div id="messages" class="max-w-4xl mx-auto space-y-8 hidden pb-10"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const input = $('#input'), messages = $('#messages'), empty = $('#empty');
+    let parsed = [];
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+    }
+
+    function cleanLine(line) {
+      // Strip PowerShell prompt lines, but keep Ollama conversation lines.
+      if (/^PS .*?> ollama run /i.test(line)) return null;
+      if (/^Windows PowerShell$/i.test(line.trim())) return null;
+      if (/^Copyright \(C\) Microsoft/i.test(line.trim())) return null;
+      if (/^Try the new cross-platform PowerShell/i.test(line.trim())) return null;
+      return line.replace(/^PS [^>]+>\s?/, '');
+    }
+
+    function parseTranscript(text) {
+      const raw = text.replace(/\r/g, '').split('\n');
+      const lines = [];
+      for (const l of raw) { const x = cleanLine(l); if (x !== null) lines.push(x); }
+
+      const turns = [];
+      let current = null, mode = 'none', buffer = [];
+
+      function flush() {
+        if (!current) return;
+        const content = buffer.join('\n').trim();
+        if (mode === 'thinking') current.thinking = content;
+        else if (mode === 'answer') current.answer = content;
+        buffer = [];
+      }
+      function startUser(content) {
+        flush();
+        if (current) turns.push(current);
+        current = { user: content.trim(), thinking: '', answer: '' };
+        mode = 'answer'; buffer = [];
+      }
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (/^\s*>>>\s*Send a message\b/i.test(line)) { flush(); if (current) turns.push(current); current = null; mode = 'none'; buffer = []; continue; }
+        const userMatch = line.match(/^\s*>>>\s?(.*)$/);
+        if (userMatch) { startUser(userMatch[1]); continue; }
+
+        if (/^\s*Thinking\.\.\.\s*$/i.test(line)) {
+          flush(); mode = 'thinking'; continue;
+        }
+        if (/^\s*\.\.\.done thinking\.\s*$/i.test(line)) {
+          flush(); mode = 'answer'; continue;
+        }
+        // Some transcripts may have a blank line after done thinking.
+        if (current) buffer.push(line);
+      }
+      flush();
+      if (current) turns.push(current);
+
+      // Remove empty turns / accidental shell-only content.
+      return turns.filter(t => t.user || t.thinking || t.answer);
+    }
+
+    function modelFromText(text) {
+      const m = text.match(/ollama run\s+([^\s\r\n]+)/i);
+      return m ? m[1] : 'Ollama';
+    }
+
+    function render() {
+      messages.innerHTML = '';
+      if (!parsed.length) {
+        messages.classList.add('hidden'); empty.classList.remove('hidden');
+      } else {
+        empty.classList.add('hidden'); messages.classList.remove('hidden');
+      }
+
+      parsed.forEach((t, idx) => {
+        const wrapper = document.createElement('article');
+        wrapper.dataset.index = idx;
+        wrapper.className = 'space-y-4 msg-enter';
+        const thinking = t.thinking ? `
+      <details class="thinking ml-2 md:ml-12 text-sm text-slate-600 bg-slate-50 rounded-r-xl border border-slate-200" data-thinking>
+        <summary class="cursor-pointer select-none px-4 py-2.5 text-xs font-medium text-slate-500 hover:text-slate-800">Thinking <span class="ml-1 opacity-60 font-normal">· click to expand</span></summary>
+        <div class="px-4 pb-4 pt-1 whitespace-pre-wrap font-mono text-[11px] leading-5 text-slate-600">${escapeHtml(t.thinking)}</div>
+      </details>` : '';
+
+        const answerHtml = marked.parse(t.answer || '_No final response captured._');
+        wrapper.innerHTML = `
+      <div class="flex justify-end gap-3">
+        <div class="max-w-[88%] md:max-w-[78%]">
+          <div class="rounded-2xl rounded-tr-sm bg-blue-600 text-white px-5 py-3 text-sm leading-relaxed shadow-md shadow-blue-600/15 whitespace-pre-wrap">${escapeHtml(t.user)}</div>
+          <div class="text-[10px] font-medium text-slate-400 text-right mt-1.5 uppercase tracking-wider">User · ${idx + 1}</div>
+        </div>
+        <div class="shrink-0 w-8 h-8 rounded-full bg-blue-50 border border-blue-100 grid place-items-center text-blue-600 text-xs font-bold shadow-sm">U</div>
+      </div>
+      ${thinking}
+      <div class="flex gap-3">
+        <div class="shrink-0 w-8 h-8 rounded-full bg-white border border-slate-200 grid place-items-center text-slate-700 text-xs font-bold shadow-sm z-10">AI</div>
+        <div class="min-w-0 max-w-[90%] md:max-w-[82%]">
+          <div class="markdown rounded-2xl rounded-tl-sm bg-white border border-slate-200/80 shadow-sm px-6 py-5 text-sm leading-relaxed text-slate-700">${answerHtml}</div>
+          <div class="flex items-center gap-2 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Assistant</span>
+            <button class="copyBtn text-[10px] font-medium text-slate-500 hover:text-blue-600 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition-colors" data-copy="${idx}">Copy</button>
+          </div>
+        </div>
+      </div>`;
+        // Add group class to the AI message container for the hover effect
+        wrapper.lastElementChild.classList.add('group');
+        messages.appendChild(wrapper);
+      });
+
+      document.querySelectorAll('.copyBtn').forEach(btn => {
+        btn.onclick = async () => {
+          const t = parsed[Number(btn.dataset.copy)];
+          await navigator.clipboard.writeText(t.answer || '');
+          const old = btn.textContent; btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = old, 1000);
+        };
+      });
+    }
+
+    function updateStats(text) {
+      $('#charCount').textContent = `${text.length.toLocaleString()} chars`;
+      $('#statChars').textContent = text.length.toLocaleString();
+      $('#statMessages').textContent = parsed.length;
+      $('#statThinking').textContent = parsed.filter(x => x.thinking).length;
+      $('#turnBadge').textContent = `${parsed.length} turn${parsed.length === 1 ? '' : 's'}`;
+      const model = modelFromText(text);
+      $('#modelBadge').textContent = model;
+      $('#modelBadge').classList.remove('hidden');
+    }
+
+    function format() {
+      parsed = parseTranscript(input.value);
+      updateStats(input.value);
+      render();
+    }
+
+    input.addEventListener('input', () => $('#charCount').textContent = `${input.value.length.toLocaleString()} chars`);
+    $('#formatBtn').onclick = format;
+    $('#clearBtn').onclick = () => { input.value = ''; parsed = []; updateStats(''); render(); };
+    $('#fileInput').onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      input.value = await f.text(); format();
+    };
+    $('#collapseBtn').onclick = () => {
+      const details = document.querySelectorAll('[data-thinking]');
+      const shouldOpen = [...details].some(d => d.open);
+      details.forEach(d => d.open = !shouldOpen);
+      $('#collapseBtn').textContent = shouldOpen ? 'Expand thinking' : 'Collapse thinking';
+    };
+    $('#copyAllBtn').onclick = async () => {
+      const text = parsed.map((t, i) => `USER\\n${t.user}\\n\\n${t.thinking ? 'THINKING\\n' + t.thinking + '\\n\\n' : ''}ASSISTANT\\n${t.answer}`).join('\\n\\n---\\n\\n');
+      await navigator.clipboard.writeText(text);
+      const b = $('#copyAllBtn'), old = b.textContent; b.textContent = 'Copied!'; setTimeout(() => b.textContent = old, 1000);
+    };
+    $('#search').addEventListener('input', e => {
+      const q = e.target.value.toLowerCase().trim();
+      document.querySelectorAll('#messages article').forEach(el => {
+        const hit = !q || el.innerText.toLowerCase().includes(q);
+        el.style.display = hit ? '' : 'none';
+        el.classList.toggle('msg-highlight', !!q && hit);
+      });
+    });
+    $('#sampleBtn').onclick = () => {
+      input.value = `Windows PowerShell
+PS C:\\Users\\Sahil Jangra> ollama run maternion/spark-x2.5-heretic:4b
+>>> how to cpu works? in brief
+Thinking...
+We need to explain how a CPU works in brief. The user wants a concise explanation.
+...done thinking.
+
+A CPU works by executing instructions from software. It repeatedly fetches, decodes and executes instructions.
+
+### Core cycle
+1. **Fetch** – retrieves the next instruction.
+2. **Decode** – understands what the instruction means.
+3. **Execute** – performs the operation.
+4. **Write Back** – stores the result.
+
+>>> i need this answer in more details
+Thinking...
+The user now requires more detailed information. I should structure the content more thoroughly.
+...done thinking.
+
+Here’s a detailed breakdown of how a CPU works:
+
+### 1. What is a CPU?
+The **CPU** executes instructions required by software.
+
+### 2. Instruction Cycle
+The CPU continuously performs **Fetch → Decode → Execute → Write Back**.
+
+>>> Send a message (/? for help)`;
+      format();
+    };
+  </script>
+</body>
+
+</html>
